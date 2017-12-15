@@ -2,7 +2,7 @@
   "name": "redux-asynch-middleware",
   "version": "1.0.0",
   "description": "Better promise handling for redux",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "babel src --presets babel-preset-es2015 --out-dir dist",
     "prepublish": "npm run build",
