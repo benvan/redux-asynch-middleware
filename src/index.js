@@ -9,31 +9,24 @@ const SUCCESS = 'success'
 const FAILURE = 'failure'
 const LOADING = 'loading'
 
-
-const asyncString = (s) => {
-  const result = new String(s)
-  result.async = true
-  return result
-}
+const AsynchSymbol = '@@asynch'
 
 export const asynch = (t) => {
 
-  /* eslint no-new-wrappers: 0 */
-  const result = new String(t)
-  /* - this ought to be very isolated. We are using the string wrapper here to facilitate appending metadata to this action */
-  /* - while action types don't need to be strings, they play nicer with third party tools if they behave like strings */
+  const result = function(){}
+	result.toString = () => t
+  result[AsynchSymbol] = true;
 
-  result.async = true;
   result.success = t
-  result.loading = asyncString(`${t}:${LOADING}`)
-  result.failure = asyncString(`${t}:${FAILURE}`)
+  result.loading = (`${t}:${LOADING}`)
+  result.failure = (`${t}:${FAILURE}`)
 
   return result
 }
 
 export const loading = (t) => {
   if (!t.loading) console.warn('Asynch: loading() used on non-asynch action ' + t)
-  return t.loading || asyncString(`${t}:${LOADING}`)
+  return t.loading || (`${t}:${LOADING}`)
 }
 
 /**
@@ -45,18 +38,19 @@ export const loading = (t) => {
  * For convenience, `dispatch` will return the promise so the caller can wait.
  */
 export const middleware = store => next => action => {
-  if (action.promise && !action.type.async){
-    console.warn(`${action.type} action has promise, but is not an async action. Consider adding asynch(..) to definition`)
+  if (action.promise && !action.type[AsynchSymbol]){
+    console.warn(`${action.type} action has promise, but is not an asynch action. Consider adding asynch(..) to definition`)
     return next(action)
   }
-  if (!action.type.async) {
+  if (!action.type[AsynchSymbol] && !action[AsynchSymbol]) {
     return next(action)
   }
 
   function makeAction(readyState, data) {
-    let type = readyState === SUCCESS ? action.type : action.type[readyState]
+    let type = action.type[readyState]
     let ready = readyState !== LOADING
-    let newAction = Object.assign({}, action, { ready, type }, data, )
+    let newAction = Object.assign({}, action, { ready, type, [AsynchSymbol]:true}, data, )
+
     delete newAction.promise
     return newAction
   }
